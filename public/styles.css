@@ -1,0 +1,161 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* Navigation */
+.main-nav {
+  background: white;
+  padding: 12px 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.main-nav .logo { font-size: 1.2rem; font-weight: 700; color: #333; }
+.main-nav .spacer { flex: 1; }
+.nav-link {
+  color: #666;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.nav-link:hover { background: #f0f0f0; color: #333; }
+.nav-link.active { background: #667eea; color: white; }
+.nav-link.tv-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+.nav-link.tv-btn:hover { opacity: 0.9; }
+
+/* Pages */
+.page { padding: 30px; max-width: 1200px; margin: 0 auto; }
+
+/* Upload */
+.upload-container {
+  max-width: 500px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.upload-container h2 { text-align: center; color: #333; margin-bottom: 6px; font-size: 1.6rem; }
+.upload-container .subtitle { text-align: center; color: #666; margin-bottom: 28px; }
+
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-weight: 600; color: #444; margin-bottom: 6px; }
+.form-group input[type="text"] {
+  width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+  border-radius: 8px; font-size: 1rem; transition: border-color 0.2s;
+}
+.form-group input[type="text"]:focus { outline: none; border-color: #667eea; }
+
+.drop-zone {
+  border: 2px dashed #ccc; border-radius: 8px; padding: 30px;
+  text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
+}
+.drop-zone:hover, .drop-zone.dragover { border-color: #667eea; background: #f8f9ff; }
+.drop-zone input[type="file"] {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer;
+}
+.drop-zone .icon { font-size: 2.5rem; margin-bottom: 8px; }
+.drop-zone p { color: #666; }
+.drop-zone .file-name { color: #667eea; font-weight: 600; margin-top: 6px; }
+
+.preview-container { text-align: center; margin-top: 12px; }
+.preview-container img { max-width: 100%; max-height: 200px; border-radius: 8px; display: none; }
+
+.submit-btn {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white; border: none; border-radius: 8px;
+  font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 30px; left: 50%; z-index: 9999;
+  transform: translateX(-50%) translateY(100px);
+  padding: 14px 28px; border-radius: 8px; color: white;
+  font-weight: 600; transition: transform 0.3s ease;
+}
+.toast.visible { transform: translateX(-50%) translateY(0); }
+.toast.success { background: #28a745; }
+.toast.error { background: #dc3545; }
+
+/* Admin */
+.admin-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.admin-tab {
+  padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 0.9rem; font-weight: 600; background: white; color: #666; transition: all 0.2s;
+}
+.admin-tab.active { background: #667eea; color: white; }
+.admin-tab .badge {
+  display: inline-block; background: rgba(0,0,0,0.1);
+  border-radius: 10px; padding: 2px 8px; font-size: 0.8rem; margin-left: 6px;
+}
+.admin-tab.active .badge { background: rgba(255,255,255,0.3); }
+
+.photo-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
+}
+.photo-card {
+  background: white; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08); transition: transform 0.2s;
+}
+.photo-card:hover { transform: translateY(-2px); }
+.photo-card img { width: 100%; height: 200px; object-fit: cover; }
+.photo-card .card-body { padding: 16px; }
+.photo-card .card-body h3 { color: #333; margin-bottom: 4px; font-size: 1rem; }
+.photo-card .card-body .caption { color: #666; font-size: 0.9rem; margin-bottom: 6px; }
+.photo-card .card-body .meta { color: #999; font-size: 0.8rem; margin-bottom: 12px; }
+.photo-card .actions { display: flex; gap: 8px; }
+.photo-card .actions button {
+  flex: 1; padding: 9px; border: none; border-radius: 6px;
+  font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: opacity 0.2s;
+}
+.photo-card .actions button:hover { opacity: 0.85; }
+.btn-approve { background: #28a745; color: white; }
+.btn-reject { background: #dc3545; color: white; }
+.btn-delete { background: #6c757d; color: white; }
+
+.status-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 12px;
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+}
+.status-pending { background: #fff3cd; color: #856404; }
+.status-approved { background: #d4edda; color: #155724; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+
+.empty-grid {
+  grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #999;
+}
+.empty-grid .icon { font-size: 3rem; margin-bottom: 12px; }
+
+/* QR Code page */
+.qr-container {
+  max-width: 500px; margin: 0 auto; background: white;
+  border-radius: 16px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  text-align: center;
+}
+.qr-container h2 { color: #333; margin-bottom: 8px; }
+.qr-container .subtitle { color: #666; margin-bottom: 24px; }
+.qr-container .qr-img { max-width: 300px; width: 100%; margin: 0 auto 20px; }
+.qr-container .url-display {
+  background: #f8f9fa; padding: 12px 20px; border-radius: 8px;
+  font-family: monospace; font-size: 1rem; color: #333;
+  word-break: break-all;
+}
+.qr-container .instructions {
+  margin-top: 20px; text-align: left; color: #555; line-height: 1.7;
+}
+.qr-container .instructions li { margin-bottom: 4px; }

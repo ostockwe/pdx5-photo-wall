@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Photo Wall - QR Code</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <nav class="main-nav">
+    <span class="logo">📸 PDX5 Photo Wall</span>
+    <a href="/" class="nav-link">Upload</a>
+    <a href="/admin.html" class="nav-link">Manager</a>
+    <span class="spacer"></span>
+    <a href="/qr.html" class="nav-link active">📱 QR Code</a>
+    <a href="/display.html" class="nav-link tv-btn">🖥️ TV Display</a>
+  </nav>
+
+  <div class="page">
+    <div class="qr-container">
+      <h2>📱 Share Your Moment</h2>
+      <p class="subtitle">PDX5 — Scan this QR code to upload photos from your phone</p>
+
+      <img class="qr-img" id="qrImage" alt="QR Code" src="">
+      <div class="url-display" id="urlDisplay">Loading...</div>
+
+      <ol class="instructions">
+        <li>Display this QR code on a screen or print it out</li>
+        <li>Team members scan it with their phone camera</li>
+        <li>They'll be taken directly to the upload page</li>
+        <li>You approve submissions from the Manager tab</li>
+        <li>Approved photos appear on the TV display automatically</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    async function loadQR() {
+      try {
+        const res = await fetch('/api/qrcode');
+        const data = await res.json();
+        document.getElementById('qrImage').src = data.qrDataUrl;
+        document.getElementById('urlDisplay').textContent = data.url;
+      } catch (err) {
+        document.getElementById('urlDisplay').textContent = 'Failed to generate QR code';
+      }
+    }
+    loadQR();
+  </script>
+</body>
+</html>

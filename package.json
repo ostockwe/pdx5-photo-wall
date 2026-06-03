@@ -1,0 +1,17 @@
+{
+  "name": "team-photo-wall",
+  "version": "1.0.0",
+  "description": "Team photo sharing wall with approval workflow and TV display mode",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "4.18.2",
+    "multer": "1.4.5-lts.1",
+    "uuid": "9.0.0",
+    "qrcode": "1.5.3"
+  }
+}

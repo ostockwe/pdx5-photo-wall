@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Photo Wall - TV Display</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      min-height: 100vh;
+      overflow: hidden;
+      cursor: none;
+    }
+    body:hover { cursor: default; }
+
+    .display-header {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 700;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      z-index: 100;
+      opacity: 0.9;
+    }
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.3s;
+      text-decoration: none;
+    }
+    body:hover .back-btn { opacity: 1; }
+    .back-btn:hover { background: rgba(255,255,255,0.2); }
+
+    .slide-container {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+    }
+    .slide {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 1.2s ease-in-out;
+      padding: 80px 40px;
+    }
+    .slide.active { opacity: 1; }
+    .slide img {
+      max-width: 82vw;
+      max-height: 68vh;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.5);
+    }
+    .slide-caption {
+      margin-top: 24px;
+      text-align: center;
+      color: white;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(10px);
+      padding: 14px 28px;
+      border-radius: 10px;
+      max-width: 70vw;
+    }
+    .slide-caption .text { font-size: 1.4rem; font-weight: 600; margin-bottom: 4px; }
+    .slide-caption .author { font-size: 1rem; opacity: 0.8; }
+
+    .progress-bar {
+      position: fixed;
+      bottom: 0; left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      z-index: 100;
+    }
+
+    .dots {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      transition: background 0.3s;
+    }
+    .dot.active { background: white; }
+
+    .empty-state {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+    }
+    .empty-state .icon { font-size: 4rem; margin-bottom: 16px; }
+    .empty-state h2 { font-size: 1.8rem; margin-bottom: 8px; }
+    .empty-state p { opacity: 0.7; font-size: 1.1rem; }
+
+    .controls {
+      position: fixed;
+      bottom: 50px; right: 20px;
+      z-index: 200;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    body:hover .controls { opacity: 1; }
+    .controls label {
+      color: white; font-size: 0.85rem;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,0,0,0.5); padding: 8px 14px; border-radius: 8px;
+    }
+    .controls input { width: 100px; }
+
+    .fullscreen-btn {
+      position: fixed;
+      top: 20px; right: 20px;
+      background: rgba(255,255,255,0.1);
+      border: none; color: white;
+      width: 40px; height: 40px;
+      border-radius: 50%; cursor: pointer;
+      font-size: 1.1rem; z-index: 200;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    body:hover .fullscreen-btn { opacity: 1; }
+    .fullscreen-btn:hover { background: rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+  <div class="display-header">📸 PDX5 — Share Your Moment</div>
+  <a class="back-btn" href="/">← Back</a>
+  <button class="fullscreen-btn" id="fullscreenBtn" title="Toggle fullscreen">⛶</button>
+
+  <div class="slide-container" id="slideContainer"></div>
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="dots" id="dots"></div>
+
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <div class="icon">🖼️</div>
+    <h2>No approved photos yet</h2>
+    <p>Photos will appear here once a manager approves them</p>
+  </div>
+
+  <div class="controls">
+    <label>
+      Speed: <span id="speedLabel">8</span>s
+      <input type="range" id="speedSlider" min="3" max="30" value="8">
+    </label>
+  </div>
+
+  <script>
+    let photos = [];
+    let currentIndex = 0;
+    let slideTimer = null;
+    let speed = 8000;
+
+    const speedSlider = document.getElementById('speedSlider');
+    const speedLabel = document.getElementById('speedLabel');
+
+    speedSlider.addEventListener('input', (e) => {
+      speed = e.target.value * 1000;
+      speedLabel.textContent = e.target.value;
+      resetTimer();
+    });
+
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen();
+    });
+
+    async function loadPhotos() {
+      try {
+        const res = await fetch('/api/photos?status=approved');
+        const newPhotos = await res.json();
+
+        if (photos.length === 0 && newPhotos.length > 0) {
+          photos = shuffle(newPhotos);
+          renderSlides();
+          showSlide(0);
+          resetTimer();
+        } else if (newPhotos.length !== photos.length) {
+          const existingIds = new Set(photos.map(p => p.id));
+          const additions = newPhotos.filter(p => !existingIds.has(p.id));
+          photos = photos.filter(p => newPhotos.some(np => np.id === p.id));
+          photos.push(...shuffle(additions));
+          renderSlides();
+        }
+
+        document.getElementById('emptyState').style.display = photos.length === 0 ? '' : 'none';
+      } catch (err) {
+        console.error('Failed to load photos:', err);
+      }
+    }
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function renderSlides() {
+      const container = document.getElementById('slideContainer');
+      const dotsEl = document.getElementById('dots');
+
+      container.innerHTML = photos.map((photo, i) => `
+        <div class="slide ${i === currentIndex ? 'active' : ''}">
+          <img src="/uploads/${photo.filename}" alt="${escapeAttr(photo.caption)}">
+          <div class="slide-caption">
+            ${photo.caption ? `<div class="text">${escapeHtml(photo.caption)}</div>` : ''}
+            <div class="author">Shared by ${escapeHtml(photo.submittedBy)}</div>
+          </div>
+        </div>
+      `).join('');
+
+      if (photos.length <= 20) {
+        dotsEl.innerHTML = photos.map((_, i) =>
+          `<div class="dot ${i === currentIndex ? 'active' : ''}"></div>`
+        ).join('');
+      } else {
+        dotsEl.innerHTML = '';
+      }
+    }
+
+    function showSlide(index) {
+      currentIndex = ((index % photos.length) + photos.length) % photos.length;
+      document.querySelectorAll('.slide').forEach((s, i) => s.classList.toggle('active', i === currentIndex));
+      document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === currentIndex));
+      animateProgress();
+    }
+
+    function nextSlide() { showSlide(currentIndex + 1); }
+    function prevSlide() { showSlide(currentIndex - 1); }
+
+    function resetTimer() {
+      clearInterval(slideTimer);
+      slideTimer = setInterval(nextSlide, speed);
+      animateProgress();
+    }
+
+    function animateProgress() {
+      const bar = document.getElementById('progressBar');
+      bar.style.transition = 'none';
+      bar.style.width = '0%';
+      void bar.offsetHeight;
+      bar.style.transition = `width ${speed}ms linear`;
+      bar.style.width = '100%';
+    }
+
+    function escapeHtml(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    function escapeAttr(t) { return (t||'').replace(/"/g, '&quot;'); }
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { nextSlide(); resetTimer(); }
+      else if (e.key === 'ArrowLeft') { prevSlide(); resetTimer(); }
+      else if (e.key === 'f' || e.key === 'F') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+    });
+
+    // Load photos and poll for updates
+    loadPhotos();
+    setInterval(loadPhotos, 15000);
+  </script>
+</body>
+</html>

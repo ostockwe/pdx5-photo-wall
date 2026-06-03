@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Photo Wall - Upload</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <nav class="main-nav">
+    <span class="logo">📸 PDX5 Photo Wall</span>
+    <a href="/" class="nav-link active">Upload</a>
+    <a href="/admin.html" class="nav-link">Manager</a>
+    <span class="spacer"></span>
+    <a href="/qr.html" class="nav-link">📱 QR Code</a>
+    <a href="/display.html" class="nav-link tv-btn">🖥️ TV Display</a>
+  </nav>
+
+  <div class="page">
+    <div class="upload-container">
+      <h2>Share Your Moment</h2>
+      <p class="subtitle">PDX5 — Upload something you're proud of with the team!</p>
+
+      <form id="uploadForm">
+        <div class="form-group">
+          <label for="nameInput">Your Name</label>
+          <input type="text" id="nameInput" placeholder="Enter your name" required>
+        </div>
+
+        <div class="form-group">
+          <label>Photo</label>
+          <div class="drop-zone" id="dropZone">
+            <div class="icon">📁</div>
+            <p>Click or drag a photo here</p>
+            <p class="file-name" id="fileName"></p>
+            <input type="file" id="fileInput" accept="image/*" required>
+          </div>
+          <div class="preview-container">
+            <img id="previewImg" alt="Preview">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="captionInput">Caption (optional)</label>
+          <input type="text" id="captionInput" placeholder="What makes this special?">
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Upload Photo</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const previewImg = document.getElementById('previewImg');
+    const fileNameEl = document.getElementById('fileName');
+    const uploadForm = document.getElementById('uploadForm');
+    const dropZone = document.getElementById('dropZone');
+
+    fileInput.addEventListener('change', handleFileSelect);
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileSelect();
+      }
+    });
+
+    function handleFileSelect() {
+      const file = fileInput.files[0];
+      if (file) {
+        fileNameEl.textContent = file.name;
+        previewImg.style.display = 'block';
+        previewImg.src = URL.createObjectURL(file);
+      }
+    }
+
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading...';
+
+      const formData = new FormData();
+      formData.append('photo', fileInput.files[0]);
+      formData.append('caption', document.getElementById('captionInput').value);
+      formData.append('submittedBy', document.getElementById('nameInput').value);
+
+      try {
+        const res = await fetch('/api/photos', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error((await res.json()).error || 'Upload failed');
+        showToast('Photo uploaded! It will appear on the wall once approved.', 'success');
+        uploadForm.reset();
+        previewImg.style.display = 'none';
+        fileNameEl.textContent = '';
+      } catch (err) {
+        showToast('Upload failed: ' + err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Upload Photo';
+      }
+    });
+
+    function showToast(msg, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast ' + type + ' visible';
+      setTimeout(() => toast.classList.remove('visible'), 3500);
+    }
+  </script>
+</body>
+</html>

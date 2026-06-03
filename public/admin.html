@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Photo Wall - Manager</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <nav class="main-nav">
+    <span class="logo">📸 PDX5 Photo Wall</span>
+    <a href="/" class="nav-link">Upload</a>
+    <a href="/admin.html" class="nav-link active">Manager</a>
+    <span class="spacer"></span>
+    <a href="/qr.html" class="nav-link">📱 QR Code</a>
+    <a href="/display.html" class="nav-link tv-btn">🖥️ TV Display</a>
+  </nav>
+
+  <div class="page">
+    <div class="admin-tabs" id="adminTabs">
+      <button class="admin-tab active" data-filter="pending">Pending <span class="badge" id="badgePending">0</span></button>
+      <button class="admin-tab" data-filter="approved">Approved <span class="badge" id="badgeApproved">0</span></button>
+      <button class="admin-tab" data-filter="rejected">Rejected <span class="badge" id="badgeRejected">0</span></button>
+      <button class="admin-tab" data-filter="all">All <span class="badge" id="badgeAll">0</span></button>
+    </div>
+    <div class="photo-grid" id="photoGrid"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let photos = [];
+    let filter = 'pending';
+
+    async function loadPhotos() {
+      const res = await fetch('/api/photos');
+      photos = await res.json();
+      photos.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      updateCounts();
+      render();
+    }
+
+    function updateCounts() {
+      document.getElementById('badgePending').textContent = photos.filter(p => p.status === 'pending').length;
+      document.getElementById('badgeApproved').textContent = photos.filter(p => p.status === 'approved').length;
+      document.getElementById('badgeRejected').textContent = photos.filter(p => p.status === 'rejected').length;
+      document.getElementById('badgeAll').textContent = photos.length;
+    }
+
+    function render() {
+      const grid = document.getElementById('photoGrid');
+      const filtered = filter === 'all' ? photos : photos.filter(p => p.status === filter);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="empty-grid"><div class="icon">📭</div><p>No ' + filter + ' photos</p></div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(photo => `
+        <div class="photo-card">
+          <img src="/uploads/${photo.filename}" alt="${escapeAttr(photo.caption)}" loading="lazy">
+          <div class="card-body">
+            <h3>${escapeHtml(photo.submittedBy)}</h3>
+            <p class="caption">${escapeHtml(photo.caption) || '<em>No caption</em>'}</p>
+            <p class="meta">
+              <span class="status-badge status-${photo.status}">${photo.status}</span>
+              &middot; ${new Date(photo.submittedAt).toLocaleDateString()}
+            </p>
+            <div class="actions">
+              ${photo.status !== 'approved' ? `<button class="btn-approve" onclick="approve('${photo.id}')">✓ Approve</button>` : ''}
+              ${photo.status !== 'rejected' ? `<button class="btn-reject" onclick="reject('${photo.id}')">✗ Reject</button>` : ''}
+              <button class="btn-delete" onclick="remove('${photo.id}')">🗑️</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function approve(id) {
+      await fetch('/api/photos/' + id, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ status: 'approved' })
+      });
+      showToast('Photo approved!', 'success');
+      loadPhotos();
+    }
+
+    async function reject(id) {
+      await fetch('/api/photos/' + id, {
+        method: 'PATCH', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ status: 'rejected' })
+      });
+      showToast('Photo rejected', 'error');
+      loadPhotos();
+    }
+
+    async function remove(id) {
+      if (!confirm('Delete this photo permanently?')) return;
+      await fetch('/api/photos/' + id, { method: 'DELETE' });
+      loadPhotos();
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const d = document.createElement('div'); d.textContent = text; return d.innerHTML;
+    }
+    function escapeAttr(text) {
+      if (!text) return '';
+      return text.replace(/"/g, '&quot;');
+    }
+
+    function showToast(msg, type) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = 'toast ' + type + ' visible';
+      setTimeout(() => toast.classList.remove('visible'), 3000);
+    }
+
+    document.getElementById('adminTabs').addEventListener('click', (e) => {
+      const tab = e.target.closest('.admin-tab');
+      if (!tab) return;
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      filter = tab.dataset.filter;
+      render();
+    });
+
+    loadPhotos();
+    setInterval(loadPhotos, 10000);
+  </script>
+</body>
+</html>
