@@ -67,6 +67,18 @@ function getLocalIP() {
   return 'localhost';
 }
 
+// Admin authentication middleware
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Operations';
+
+app.post('/api/auth', (req, res) => {
+  const { password } = req.body;
+  if (password === ADMIN_PASSWORD) {
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ error: 'Incorrect password' });
+  }
+});
+
 // ==================== API ROUTES ====================
 
 // Upload a photo

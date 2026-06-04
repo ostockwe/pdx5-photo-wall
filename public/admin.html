@@ -16,7 +16,21 @@
     <a href="/display.html" class="nav-link tv-btn">🖥️ TV Display</a>
   </nav>
 
-  <div class="page">
+  <div class="page" id="loginPage">
+    <div class="upload-container" style="max-width:400px;">
+      <h2 style="text-align:center; margin-bottom:8px;">🔒 Manager Access</h2>
+      <p style="text-align:center; color:#666; margin-bottom:24px;">Enter the password to continue</p>
+      <form id="loginForm">
+        <div class="form-group">
+          <input type="password" id="passwordInput" placeholder="Password" required style="width:100%; padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-size:1rem;">
+        </div>
+        <button type="submit" class="submit-btn" style="max-width:100%;">Enter</button>
+      </form>
+      <p id="loginError" style="color:#dc3545; text-align:center; margin-top:12px; display:none;">Incorrect password</p>
+    </div>
+  </div>
+
+  <div class="page" id="adminPage" style="display:none;">
     <div class="admin-tabs" id="adminTabs">
       <button class="admin-tab active" data-filter="pending">Pending <span class="badge" id="badgePending">0</span></button>
       <button class="admin-tab" data-filter="approved">Approved <span class="badge" id="badgeApproved">0</span></button>
@@ -29,6 +43,45 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    // Auth check
+    const loginPage = document.getElementById('loginPage');
+    const adminPage = document.getElementById('adminPage');
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('loginError');
+
+    // Check if already authenticated this session
+    if (sessionStorage.getItem('adminAuth') === 'true') {
+      showAdmin();
+    }
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginError.style.display = 'none';
+      const password = document.getElementById('passwordInput').value;
+      try {
+        const res = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        if (res.ok) {
+          sessionStorage.setItem('adminAuth', 'true');
+          showAdmin();
+        } else {
+          loginError.style.display = 'block';
+        }
+      } catch (err) {
+        loginError.style.display = 'block';
+      }
+    });
+
+    function showAdmin() {
+      loginPage.style.display = 'none';
+      adminPage.style.display = 'block';
+      loadPhotos();
+    }
+
+    // Admin logic
     let photos = [];
     let filter = 'pending';
 
