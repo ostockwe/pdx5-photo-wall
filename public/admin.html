@@ -111,7 +111,7 @@
 
       grid.innerHTML = filtered.map(photo => `
         <div class="photo-card">
-          <img src="/uploads/${photo.filename}" alt="${escapeAttr(photo.caption)}" loading="lazy">
+          <img src="${photo.imageUrl}" alt="${escapeAttr(photo.caption)}" loading="lazy">
           <div class="card-body">
             <h3>${escapeHtml(photo.submittedBy)}</h3>
             <p class="caption">${escapeHtml(photo.caption) || '<em>No caption</em>'}</p>

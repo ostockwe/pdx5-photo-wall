@@ -5,36 +5,29 @@ const fs = require('fs');
 const os = require('os');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
+const cloudinary = require('cloudinary').v2;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Storage paths - use RAILWAY_VOLUME_MOUNT_PATH if available (persistent storage)
+// Cloudinary configuration (set these as environment variables)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Data storage - use persistent path if available, otherwise local
 const storageBase = process.env.RAILWAY_VOLUME_MOUNT_PATH || __dirname;
-const uploadsDir = path.join(storageBase, 'uploads');
 const dataDir = path.join(storageBase, 'data');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const dataFile = path.join(dataDir, 'photos.json');
 if (!fs.existsSync(dataFile)) fs.writeFileSync(dataFile, '[]');
 
-// Middleware
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(uploadsDir));
-
-// Multer config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${uuidv4()}${ext}`);
-  }
-});
-
+// Multer - temp storage for upload before sending to Cloudinary
 const upload = multer({
-  storage,
+  dest: os.tmpdir(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|webp/;
@@ -44,6 +37,10 @@ const upload = multer({
     cb(new Error('Only image files (jpg, png, gif, webp) are allowed.'));
   }
 });
+
+// Middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Data helpers
 function readPhotos() {
@@ -67,7 +64,7 @@ function getLocalIP() {
   return 'localhost';
 }
 
-// Admin authentication middleware
+// Admin authentication
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Operations';
 
 app.post('/api/auth', (req, res) => {
@@ -82,23 +79,39 @@ app.post('/api/auth', (req, res) => {
 // ==================== API ROUTES ====================
 
 // Upload a photo
-app.post('/api/photos', upload.single('photo'), (req, res) => {
+app.post('/api/photos', upload.single('photo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const photos = readPhotos();
-  const newPhoto = {
-    id: uuidv4(),
-    filename: req.file.filename,
-    originalName: req.file.originalname,
-    caption: req.body.caption || '',
-    submittedBy: req.body.submittedBy || 'Anonymous',
-    status: 'pending',
-    submittedAt: new Date().toISOString()
-  };
+  try {
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'pdx5-photo-wall',
+      transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
+    });
 
-  photos.push(newPhoto);
-  writePhotos(photos);
-  res.status(201).json(newPhoto);
+    // Remove temp file
+    fs.unlinkSync(req.file.path);
+
+    const photos = readPhotos();
+    const newPhoto = {
+      id: uuidv4(),
+      imageUrl: result.secure_url,
+      cloudinaryId: result.public_id,
+      caption: req.body.caption || '',
+      submittedBy: req.body.submittedBy || 'Anonymous',
+      status: 'pending',
+      submittedAt: new Date().toISOString()
+    };
+
+    photos.push(newPhoto);
+    writePhotos(photos);
+    res.status(201).json(newPhoto);
+  } catch (err) {
+    // Clean up temp file on error
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    console.error('Upload error:', err);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
 });
 
 // Get photos (optionally filter by status)
@@ -127,24 +140,32 @@ app.patch('/api/photos/:id', (req, res) => {
 });
 
 // Delete a photo
-app.delete('/api/photos/:id', (req, res) => {
+app.delete('/api/photos/:id', async (req, res) => {
   const { id } = req.params;
   let photos = readPhotos();
   const photo = photos.find(p => p.id === id);
   if (!photo) return res.status(404).json({ error: 'Photo not found' });
 
-  const filePath = path.join(uploadsDir, photo.filename);
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  // Delete from Cloudinary
+  try {
+    if (photo.cloudinaryId) {
+      await cloudinary.uploader.destroy(photo.cloudinaryId);
+    }
+  } catch (err) {
+    console.error('Cloudinary delete error:', err);
+  }
 
   photos = photos.filter(p => p.id !== id);
   writePhotos(photos);
   res.json({ message: 'Deleted' });
 });
 
-// QR code endpoint - uses RAILWAY_PUBLIC_DOMAIN if deployed, otherwise local IP
+// QR code endpoint
 app.get('/api/qrcode', async (req, res) => {
   let url;
-  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+  if (process.env.RENDER_EXTERNAL_URL) {
+    url = process.env.RENDER_EXTERNAL_URL;
+  } else if (process.env.RAILWAY_PUBLIC_DOMAIN) {
     url = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
   } else {
     const ip = getLocalIP();
@@ -161,7 +182,9 @@ app.get('/api/qrcode', async (req, res) => {
 // Server info
 app.get('/api/info', (req, res) => {
   let url;
-  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+  if (process.env.RENDER_EXTERNAL_URL) {
+    url = process.env.RENDER_EXTERNAL_URL;
+  } else if (process.env.RAILWAY_PUBLIC_DOMAIN) {
     url = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
   } else {
     const ip = getLocalIP();
@@ -175,7 +198,7 @@ app.listen(PORT, '0.0.0.0', () => {
   const ip = getLocalIP();
   console.log('');
   console.log('  ╔══════════════════════════════════════════════╗');
-  console.log('  ║         📸 Team Photo Wall Running           ║');
+  console.log('  ║         📸 PDX5 Photo Wall Running           ║');
   console.log('  ╠══════════════════════════════════════════════╣');
   console.log(`  ║  Local:   http://localhost:${PORT}             ║`);
   console.log(`  ║  Network: http://${ip}:${PORT}    ║`);
@@ -186,8 +209,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('  ║    TV:      /display.html                    ║');
   console.log('  ║    QR Code: /qr.html                         ║');
   console.log('  ╚══════════════════════════════════════════════╝');
-  console.log('');
-  console.log('  Share the Network URL with your team!');
-  console.log('  Point your TV browser to /display.html');
   console.log('');
 });

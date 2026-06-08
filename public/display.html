@@ -238,7 +238,7 @@
 
       container.innerHTML = photos.map((photo, i) => `
         <div class="slide ${i === currentIndex ? 'active' : ''}">
-          <img src="/uploads/${photo.filename}" alt="${escapeAttr(photo.caption)}">
+          <img src="${photo.imageUrl}" alt="${escapeAttr(photo.caption)}">
           <div class="slide-caption">
             ${photo.caption ? `<div class="text">${escapeHtml(photo.caption)}</div>` : ''}
             <div class="author">Shared by ${escapeHtml(photo.submittedBy)}</div>
