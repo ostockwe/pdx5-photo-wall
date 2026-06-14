@@ -109,7 +109,9 @@
         return;
       }
 
-      grid.innerHTML = filtered.map(photo => `
+      grid.innerHTML = filtered.map(photo => {
+        const safeId = photo.id.replace(/'/g, "\\'");
+        return `
         <div class="photo-card">
           <img src="${photo.imageUrl}" alt="${escapeAttr(photo.caption)}" loading="lazy">
           <div class="card-body">
@@ -120,17 +122,17 @@
               &middot; ${new Date(photo.submittedAt).toLocaleDateString()}
             </p>
             <div class="actions">
-              ${photo.status !== 'approved' ? `<button class="btn-approve" onclick="approve('${photo.id}')">✓ Approve</button>` : ''}
-              ${photo.status !== 'rejected' ? `<button class="btn-reject" onclick="reject('${photo.id}')">✗ Reject</button>` : ''}
-              <button class="btn-delete" onclick="remove('${photo.id}')">🗑️</button>
+              ${photo.status !== 'approved' ? `<button class="btn-approve" onclick="approve('${safeId}')">✓ Approve</button>` : ''}
+              ${photo.status !== 'rejected' ? `<button class="btn-reject" onclick="reject('${safeId}')">✗ Reject</button>` : ''}
+              <button class="btn-delete" onclick="remove('${safeId}')">🗑️</button>
             </div>
           </div>
         </div>
-      `).join('');
+      `}).join('');
     }
 
     async function approve(id) {
-      await fetch('/api/photos/' + id, {
+      await fetch('/api/photos/' + encodeURIComponent(id), {
         method: 'PATCH', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ status: 'approved' })
       });
@@ -139,7 +141,7 @@
     }
 
     async function reject(id) {
-      await fetch('/api/photos/' + id, {
+      await fetch('/api/photos/' + encodeURIComponent(id), {
         method: 'PATCH', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ status: 'rejected' })
       });
@@ -149,7 +151,7 @@
 
     async function remove(id) {
       if (!confirm('Delete this photo permanently?')) return;
-      await fetch('/api/photos/' + id, { method: 'DELETE' });
+      await fetch('/api/photos/' + encodeURIComponent(id), { method: 'DELETE' });
       loadPhotos();
     }
 

@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Team photo sharing wall with approval workflow and TV display mode",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo 'No build step needed'"
   },
   "engines": {
     "node": ">=18.0.0"
