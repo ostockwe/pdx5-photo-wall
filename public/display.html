@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Team Photo Wall - TV Display</title>
+  <title>PDX5 Photo Wall - Display</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -13,9 +13,7 @@
       animation: gradientShift 20s ease infinite;
       min-height: 100vh;
       overflow: hidden;
-      cursor: none;
     }
-    body:hover { cursor: default; }
 
     @keyframes gradientShift {
       0% { background-position: 0% 50%; }
@@ -25,19 +23,22 @@
 
     .display-header {
       position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
+      top: 0;
+      left: 0;
+      right: 0;
+      text-align: center;
+      padding: 16px;
       color: #333;
       font-size: 1.5rem;
       font-weight: 700;
-      text-shadow: 0 1px 4px rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(10px);
       z-index: 100;
     }
 
     .back-btn {
       position: fixed;
-      top: 20px;
+      top: 16px;
       left: 20px;
       background: rgba(0,0,0,0.08);
       border: none;
@@ -54,71 +55,62 @@
     body:hover .back-btn { opacity: 1; }
     .back-btn:hover { background: rgba(0,0,0,0.12); }
 
-    .slide-container {
+    .scroll-container {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      padding-top: 70px;
     }
-    .slide {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
+
+    .feed {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 1.2s ease-in-out;
-      padding: 80px 40px;
+      gap: 30px;
+      padding: 20px 20px 100px;
+      will-change: transform;
     }
-    .slide.active { opacity: 1; }
-    .slide img {
-      max-width: 82vw;
-      max-height: 68vh;
-      object-fit: contain;
+
+    .feed-card {
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(8px);
       border-radius: 16px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
     }
-    .slide-caption {
-      margin-top: 24px;
-      text-align: center;
+
+    .feed-card img {
+      width: 100%;
+      max-height: 500px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .feed-card .card-info {
+      padding: 16px 20px;
+    }
+
+    .feed-card .card-info .caption {
+      font-size: 1.2rem;
+      font-weight: 600;
       color: #333;
-      background: rgba(255,255,255,0.85);
-      backdrop-filter: blur(10px);
-      padding: 14px 28px;
-      border-radius: 12px;
-      max-width: 70vw;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
-    .slide-caption .text { font-size: 1.4rem; font-weight: 600; margin-bottom: 4px; color: #333; }
-    .slide-caption .author { font-size: 1rem; color: #666; }
-
-    .progress-bar {
-      position: fixed;
-      bottom: 0; left: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #f093fb, #f5576c, #ffd86f);
-      z-index: 100;
+      margin-bottom: 4px;
     }
 
-    .dots {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 8px;
-      z-index: 100;
+    .feed-card .card-info .author {
+      font-size: 0.95rem;
+      color: #666;
     }
-    .dot {
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.15);
-      transition: background 0.3s;
-    }
-    .dot.active { background: #333; }
 
     .empty-state {
       position: fixed;
-      top: 50%; left: 50%;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
       color: #555;
@@ -129,42 +121,34 @@
 
     .controls {
       position: fixed;
-      bottom: 50px; right: 20px;
+      bottom: 20px;
+      right: 20px;
       z-index: 200;
       opacity: 0;
       transition: opacity 0.3s;
     }
     body:hover .controls { opacity: 1; }
     .controls label {
-      color: #555; font-size: 0.85rem;
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.7); padding: 8px 14px; border-radius: 8px;
+      color: #555;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.8);
+      padding: 8px 14px;
+      border-radius: 8px;
       backdrop-filter: blur(5px);
     }
     .controls input { width: 100px; }
-
-    .fullscreen-btn {
-      position: fixed;
-      top: 20px; right: 20px;
-      background: rgba(0,0,0,0.08);
-      border: none; color: #555;
-      width: 40px; height: 40px;
-      border-radius: 50%; cursor: pointer;
-      font-size: 1.1rem; z-index: 200;
-      opacity: 0; transition: opacity 0.3s;
-    }
-    body:hover .fullscreen-btn { opacity: 1; }
-    .fullscreen-btn:hover { background: rgba(0,0,0,0.12); }
   </style>
 </head>
 <body>
   <div class="display-header">📸 PDX5 — Share Your Moment</div>
   <a class="back-btn" href="/">← Back</a>
-  <button class="fullscreen-btn" id="fullscreenBtn" title="Toggle fullscreen">⛶</button>
 
-  <div class="slide-container" id="slideContainer"></div>
-  <div class="progress-bar" id="progressBar"></div>
-  <div class="dots" id="dots"></div>
+  <div class="scroll-container" id="scrollContainer">
+    <div class="feed" id="feed"></div>
+  </div>
 
   <div class="empty-state" id="emptyState" style="display:none;">
     <div class="icon">🖼️</div>
@@ -174,47 +158,43 @@
 
   <div class="controls">
     <label>
-      Speed: <span id="speedLabel">8</span>s
-      <input type="range" id="speedSlider" min="3" max="30" value="8">
+      Speed: <span id="speedLabel">30</span>px/s
+      <input type="range" id="speedSlider" min="10" max="80" value="30">
     </label>
   </div>
 
   <script>
     let photos = [];
-    let currentIndex = 0;
-    let slideTimer = null;
-    let speed = 8000;
+    let scrollSpeed = 30; // pixels per second
+    let scrollPos = 0;
+    let animationId = null;
+    let lastTime = null;
+    let feedHeight = 0;
+    let containerHeight = 0;
+    let isPaused = false;
 
+    const feed = document.getElementById('feed');
+    const scrollContainer = document.getElementById('scrollContainer');
     const speedSlider = document.getElementById('speedSlider');
     const speedLabel = document.getElementById('speedLabel');
 
     speedSlider.addEventListener('input', (e) => {
-      speed = e.target.value * 1000;
-      speedLabel.textContent = e.target.value;
-      resetTimer();
+      scrollSpeed = parseInt(e.target.value);
+      speedLabel.textContent = scrollSpeed;
     });
 
-    document.getElementById('fullscreenBtn').addEventListener('click', () => {
-      if (document.fullscreenElement) document.exitFullscreen();
-      else document.documentElement.requestFullscreen();
-    });
+    // Pause on hover for readability
+    scrollContainer.addEventListener('mouseenter', () => { isPaused = true; });
+    scrollContainer.addEventListener('mouseleave', () => { isPaused = false; });
 
     async function loadPhotos() {
       try {
         const res = await fetch('/api/photos?status=approved');
         const newPhotos = await res.json();
 
-        if (photos.length === 0 && newPhotos.length > 0) {
-          photos = shuffle(newPhotos);
-          renderSlides();
-          showSlide(0);
-          resetTimer();
-        } else if (newPhotos.length !== photos.length) {
-          const existingIds = new Set(photos.map(p => p.id));
-          const additions = newPhotos.filter(p => !existingIds.has(p.id));
-          photos = photos.filter(p => newPhotos.some(np => np.id === p.id));
-          photos.push(...shuffle(additions));
-          renderSlides();
+        if (JSON.stringify(newPhotos.map(p => p.id)) !== JSON.stringify(photos.map(p => p.id))) {
+          photos = newPhotos;
+          renderFeed();
         }
 
         document.getElementById('emptyState').style.display = photos.length === 0 ? '' : 'none';
@@ -223,78 +203,75 @@
       }
     }
 
-    function shuffle(arr) {
-      const a = [...arr];
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
+    function renderFeed() {
+      if (photos.length === 0) {
+        feed.innerHTML = '';
+        return;
       }
-      return a;
-    }
 
-    function renderSlides() {
-      const container = document.getElementById('slideContainer');
-      const dotsEl = document.getElementById('dots');
+      // Duplicate photos enough times to create seamless loop
+      const duplicates = Math.max(3, Math.ceil(20 / photos.length));
+      let allPhotos = [];
+      for (let i = 0; i < duplicates; i++) {
+        allPhotos = allPhotos.concat(photos);
+      }
 
-      container.innerHTML = photos.map((photo, i) => `
-        <div class="slide ${i === currentIndex ? 'active' : ''}">
-          <img src="${photo.imageUrl}" alt="${escapeAttr(photo.caption)}">
-          <div class="slide-caption">
-            ${photo.caption ? `<div class="text">${escapeHtml(photo.caption)}</div>` : ''}
+      feed.innerHTML = allPhotos.map(photo => `
+        <div class="feed-card">
+          <img src="${photo.imageUrl}" alt="${escapeAttr(photo.caption)}" loading="lazy">
+          <div class="card-info">
+            ${photo.caption ? `<div class="caption">${escapeHtml(photo.caption)}</div>` : ''}
             <div class="author">Shared by ${escapeHtml(photo.submittedBy)}</div>
           </div>
         </div>
       `).join('');
 
-      if (photos.length <= 20) {
-        dotsEl.innerHTML = photos.map((_, i) =>
-          `<div class="dot ${i === currentIndex ? 'active' : ''}"></div>`
-        ).join('');
-      } else {
-        dotsEl.innerHTML = '';
+      // Wait for images to load then calculate height
+      setTimeout(() => {
+        feedHeight = feed.scrollHeight;
+        containerHeight = scrollContainer.clientHeight;
+        // Reset scroll position
+        scrollPos = 0;
+      }, 500);
+    }
+
+    function animate(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const delta = (timestamp - lastTime) / 1000; // seconds
+      lastTime = timestamp;
+
+      if (!isPaused && feedHeight > containerHeight) {
+        scrollPos += scrollSpeed * delta;
+
+        // Loop: when we've scrolled past one set of photos, jump back
+        const singleSetHeight = feedHeight / Math.max(3, Math.ceil(20 / photos.length));
+        if (scrollPos >= singleSetHeight) {
+          scrollPos -= singleSetHeight;
+        }
+
+        feed.style.transform = `translateY(-${scrollPos}px)`;
       }
+
+      animationId = requestAnimationFrame(animate);
     }
 
-    function showSlide(index) {
-      currentIndex = ((index % photos.length) + photos.length) % photos.length;
-      document.querySelectorAll('.slide').forEach((s, i) => s.classList.toggle('active', i === currentIndex));
-      document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === currentIndex));
-      animateProgress();
+    function startScrolling() {
+      if (animationId) cancelAnimationFrame(animationId);
+      lastTime = null;
+      animationId = requestAnimationFrame(animate);
     }
 
-    function nextSlide() { showSlide(currentIndex + 1); }
-    function prevSlide() { showSlide(currentIndex - 1); }
-
-    function resetTimer() {
-      clearInterval(slideTimer);
-      slideTimer = setInterval(nextSlide, speed);
-      animateProgress();
+    function escapeHtml(t) {
+      if (!t) return '';
+      const d = document.createElement('div');
+      d.textContent = t;
+      return d.innerHTML;
     }
+    function escapeAttr(t) { return (t || '').replace(/"/g, '&quot;'); }
 
-    function animateProgress() {
-      const bar = document.getElementById('progressBar');
-      bar.style.transition = 'none';
-      bar.style.width = '0%';
-      void bar.offsetHeight;
-      bar.style.transition = `width ${speed}ms linear`;
-      bar.style.width = '100%';
-    }
-
-    function escapeHtml(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
-    function escapeAttr(t) { return (t||'').replace(/"/g, '&quot;'); }
-
-    // Keyboard controls
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') { nextSlide(); resetTimer(); }
-      else if (e.key === 'ArrowLeft') { prevSlide(); resetTimer(); }
-      else if (e.key === 'f' || e.key === 'F') {
-        if (document.fullscreenElement) document.exitFullscreen();
-        else document.documentElement.requestFullscreen();
-      }
-    });
-
-    // Load photos and poll for updates
+    // Initialize
     loadPhotos();
+    startScrolling();
     setInterval(loadPhotos, 15000);
   </script>
 </body>
