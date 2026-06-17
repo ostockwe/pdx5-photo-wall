@@ -209,14 +209,8 @@
         return;
       }
 
-      // Duplicate photos enough times to create seamless loop
-      const duplicates = Math.max(3, Math.ceil(20 / photos.length));
-      let allPhotos = [];
-      for (let i = 0; i < duplicates; i++) {
-        allPhotos = allPhotos.concat(photos);
-      }
-
-      feed.innerHTML = allPhotos.map(photo => `
+      // Show each photo only once
+      feed.innerHTML = photos.map(photo => `
         <div class="feed-card">
           <img src="${photo.imageUrl}" alt="${escapeAttr(photo.caption)}" loading="lazy">
           <div class="card-info">
@@ -230,7 +224,6 @@
       setTimeout(() => {
         feedHeight = feed.scrollHeight;
         containerHeight = scrollContainer.clientHeight;
-        // Reset scroll position
         scrollPos = 0;
       }, 500);
     }
@@ -243,10 +236,17 @@
       if (!isPaused && feedHeight > containerHeight) {
         scrollPos += scrollSpeed * delta;
 
-        // Loop: when we've scrolled past one set of photos, jump back
-        const singleSetHeight = feedHeight / Math.max(3, Math.ceil(20 / photos.length));
-        if (scrollPos >= singleSetHeight) {
-          scrollPos -= singleSetHeight;
+        // Stop at the bottom, then reset to top after a pause
+        const maxScroll = feedHeight - containerHeight;
+        if (scrollPos >= maxScroll) {
+          scrollPos = maxScroll;
+          // Pause at bottom for 3 seconds, then jump to top
+          isPaused = true;
+          setTimeout(() => {
+            scrollPos = 0;
+            feed.style.transform = `translateY(0px)`;
+            isPaused = false;
+          }, 3000);
         }
 
         feed.style.transform = `translateY(-${scrollPos}px)`;
