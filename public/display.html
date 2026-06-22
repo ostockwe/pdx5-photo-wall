@@ -147,19 +147,19 @@
       background: rgba(255,255,255,0.9);
       backdrop-filter: blur(8px);
       border-radius: 12px;
-      padding: 12px;
+      padding: 16px;
       text-align: center;
       box-shadow: 0 4px 16px rgba(0,0,0,0.1);
       z-index: 150;
     }
     .qr-corner img {
-      width: 100px;
-      height: 100px;
+      width: 150px;
+      height: 150px;
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
     .qr-corner p {
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       color: #555;
       font-weight: 600;
     }
@@ -248,11 +248,12 @@
         </div>
       `).join('');
 
-      // Wait for images to load then calculate height
+      // Wait for images to load then start scrolling
       setTimeout(() => {
         feedHeight = feed.scrollHeight;
         containerHeight = scrollContainer.clientHeight;
         scrollPos = 0;
+        feed.style.transform = 'translateY(0px)';
       }, 500);
     }
 
@@ -283,10 +284,34 @@
       animationId = requestAnimationFrame(animate);
     }
 
+    // Fallback: use setInterval for TVs that don't support requestAnimationFrame well
+    function animateFallback() {
+      if (!isPaused && feedHeight > containerHeight) {
+        scrollPos += scrollSpeed / 30; // ~30fps
+
+        const maxScroll = feedHeight - containerHeight;
+        if (scrollPos >= maxScroll) {
+          scrollPos = maxScroll;
+          isPaused = true;
+          setTimeout(() => {
+            scrollPos = 0;
+            feed.style.transform = 'translateY(0px)';
+            isPaused = false;
+          }, 3000);
+        }
+
+        feed.style.transform = 'translateY(-' + scrollPos + 'px)';
+      }
+    }
+
     function startScrolling() {
-      if (animationId) cancelAnimationFrame(animationId);
-      lastTime = null;
-      animationId = requestAnimationFrame(animate);
+      if (typeof requestAnimationFrame === 'function') {
+        lastTime = null;
+        animationId = requestAnimationFrame(animate);
+      } else {
+        // Fallback for older TV browsers
+        setInterval(animateFallback, 33);
+      }
     }
 
     function escapeHtml(t) {
