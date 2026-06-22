@@ -63,7 +63,11 @@
       bottom: 0;
       overflow: hidden;
       padding-top: 70px;
+      overflow-y: scroll;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
+    .scroll-container::-webkit-scrollbar { display: none; }
 
     .feed {
       display: flex;
@@ -71,7 +75,6 @@
       align-items: center;
       gap: 30px;
       padding: 20px 20px 100px;
-      will-change: transform;
     }
 
     .feed-card {
@@ -194,11 +197,6 @@
   <script>
     let photos = [];
     let scrollSpeed = 30; // pixels per second
-    let scrollPos = 0;
-    let animationId = null;
-    let lastTime = null;
-    let feedHeight = 0;
-    let containerHeight = 0;
     let isPaused = false;
 
     const feed = document.getElementById('feed');
@@ -247,71 +245,26 @@
           </div>
         </div>
       `).join('');
-
-      // Wait for images to load then start scrolling
-      setTimeout(() => {
-        feedHeight = feed.scrollHeight;
-        containerHeight = scrollContainer.clientHeight;
-        scrollPos = 0;
-        feed.style.transform = 'translateY(0px)';
-      }, 500);
-    }
-
-    function animate(timestamp) {
-      if (!lastTime) lastTime = timestamp;
-      const delta = (timestamp - lastTime) / 1000; // seconds
-      lastTime = timestamp;
-
-      if (!isPaused && feedHeight > containerHeight) {
-        scrollPos += scrollSpeed * delta;
-
-        // Stop at the bottom, then reset to top after a pause
-        const maxScroll = feedHeight - containerHeight;
-        if (scrollPos >= maxScroll) {
-          scrollPos = maxScroll;
-          // Pause at bottom for 3 seconds, then jump to top
-          isPaused = true;
-          setTimeout(() => {
-            scrollPos = 0;
-            feed.style.transform = `translateY(0px)`;
-            isPaused = false;
-          }, 3000);
-        }
-
-        feed.style.transform = `translateY(-${scrollPos}px)`;
-      }
-
-      animationId = requestAnimationFrame(animate);
-    }
-
-    // Fallback: use setInterval for TVs that don't support requestAnimationFrame well
-    function animateFallback() {
-      if (!isPaused && feedHeight > containerHeight) {
-        scrollPos += scrollSpeed / 30; // ~30fps
-
-        const maxScroll = feedHeight - containerHeight;
-        if (scrollPos >= maxScroll) {
-          scrollPos = maxScroll;
-          isPaused = true;
-          setTimeout(() => {
-            scrollPos = 0;
-            feed.style.transform = 'translateY(0px)';
-            isPaused = false;
-          }, 3000);
-        }
-
-        feed.style.transform = 'translateY(-' + scrollPos + 'px)';
-      }
     }
 
     function startScrolling() {
-      if (typeof requestAnimationFrame === 'function') {
-        lastTime = null;
-        animationId = requestAnimationFrame(animate);
-      } else {
-        // Fallback for older TV browsers
-        setInterval(animateFallback, 33);
-      }
+      setInterval(() => {
+        if (isPaused) return;
+
+        const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+        if (maxScroll <= 0) return;
+
+        scrollContainer.scrollTop += 1;
+
+        // When we hit the bottom, pause then reset to top
+        if (scrollContainer.scrollTop >= maxScroll) {
+          isPaused = true;
+          setTimeout(() => {
+            scrollContainer.scrollTop = 0;
+            isPaused = false;
+          }, 3000);
+        }
+      }, 1000 / scrollSpeed);
     }
 
     function escapeHtml(t) {
@@ -332,6 +285,9 @@
         document.getElementById('qrCorner').style.display = 'none';
       }
     }
+
+    // Periodically recalculate in case images loaded late
+    // (scrollTop approach handles this naturally)
 
     // Initialize
     loadPhotos();
