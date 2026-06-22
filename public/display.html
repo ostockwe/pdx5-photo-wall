@@ -191,9 +191,7 @@
       speedLabel.textContent = scrollSpeed;
     });
 
-    // Pause on hover for readability
-    scrollContainer.addEventListener('mouseenter', () => { isPaused = true; });
-    scrollContainer.addEventListener('mouseleave', () => { isPaused = false; });
+    // No pause on hover - keep scrolling always
 
     async function loadPhotos() {
       try {
