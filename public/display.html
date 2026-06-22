@@ -122,26 +122,8 @@
     .empty-state p { color: #666; font-size: 1.1rem; }
 
     .controls {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 200;
-      opacity: 0;
-      transition: opacity 0.3s;
+      display: none;
     }
-    body:hover .controls { opacity: 1; }
-    .controls label {
-      color: #555;
-      font-size: 0.85rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255,255,255,0.8);
-      padding: 8px 14px;
-      border-radius: 8px;
-      backdrop-filter: blur(5px);
-    }
-    .controls input { width: 100px; }
 
     .qr-corner {
       position: fixed;
