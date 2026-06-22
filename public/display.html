@@ -230,23 +230,37 @@
     }
 
     function startScrolling() {
-      setInterval(() => {
-        if (isPaused) return;
+      function scrollStep() {
+        if (!isPaused) {
+          const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+          if (maxScroll > 0) {
+            scrollContainer.scrollTop += 1;
 
-        const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-        if (maxScroll <= 0) return;
-
-        scrollContainer.scrollTop += 1;
-
-        // When we hit the bottom, pause then reset to top
-        if (scrollContainer.scrollTop >= maxScroll) {
-          isPaused = true;
-          setTimeout(() => {
-            scrollContainer.scrollTop = 0;
-            isPaused = false;
-          }, 3000);
+            if (scrollContainer.scrollTop >= maxScroll) {
+              isPaused = true;
+              setTimeout(() => {
+                scrollContainer.scrollTop = 0;
+                isPaused = false;
+              }, 3000);
+            }
+          }
         }
-      }, 1000 / scrollSpeed);
+        setTimeout(scrollStep, 1000 / scrollSpeed);
+      }
+      scrollStep();
+
+      // Also restart scrolling on fullscreen change
+      document.addEventListener('fullscreenchange', () => {
+        // Brief pause to let the browser settle after fullscreen transition
+        isPaused = true;
+        setTimeout(() => { isPaused = false; }, 500);
+      });
+
+      // Prevent Firefox from throttling by keeping activity
+      setInterval(() => {
+        // Keep-alive: prevents browser from throttling timers
+        void scrollContainer.scrollHeight;
+      }, 1000);
     }
 
     function escapeHtml(t) {
