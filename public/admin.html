@@ -35,6 +35,7 @@
       <button class="admin-tab active" data-filter="pending">Pending <span class="badge" id="badgePending">0</span></button>
       <button class="admin-tab" data-filter="approved">Approved <span class="badge" id="badgeApproved">0</span></button>
       <button class="admin-tab" data-filter="rejected">Rejected <span class="badge" id="badgeRejected">0</span></button>
+      <button class="admin-tab" data-filter="archived">Archived <span class="badge" id="badgeArchived">0</span></button>
       <button class="admin-tab" data-filter="all">All <span class="badge" id="badgeAll">0</span></button>
     </div>
     <div class="photo-grid" id="photoGrid"></div>
@@ -78,6 +79,7 @@
       cursor: pointer;
     }
     .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+    .status-archived { background: #e2e3e5; color: #383d41; }
   </style>
 
   <script>
@@ -135,6 +137,7 @@
       document.getElementById('badgePending').textContent = photos.filter(p => p.status === 'pending').length;
       document.getElementById('badgeApproved').textContent = photos.filter(p => p.status === 'approved').length;
       document.getElementById('badgeRejected').textContent = photos.filter(p => p.status === 'rejected').length;
+      document.getElementById('badgeArchived').textContent = photos.filter(p => p.status === 'archived').length;
       document.getElementById('badgeAll').textContent = photos.length;
     }
 

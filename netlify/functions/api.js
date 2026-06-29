@@ -176,7 +176,7 @@ exports.handler = async (event) => {
     if (patchMatch && method === 'PATCH') {
       const publicId = decodeURIComponent(patchMatch[1]);
       const body = JSON.parse(event.body);
-      if (!['approved', 'rejected'].includes(body.status)) {
+      if (!['approved', 'rejected', 'archived'].includes(body.status)) {
         return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid status' }) };
       }
 
@@ -194,11 +194,14 @@ exports.handler = async (event) => {
           .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
 
         if (approved.length > 25) {
-          // Delete the oldest approved photos beyond 25
+          // Archive the oldest approved photos beyond 25
           const toArchive = approved.slice(0, approved.length - 25);
           for (const old of toArchive) {
             try {
-              await cloudinary.uploader.destroy(old.cloudinaryId);
+              const oldResource = await cloudinary.api.resource(old.cloudinaryId, { context: true });
+              const oldCtx = oldResource.context?.custom || {};
+              oldCtx.status = 'archived';
+              await updatePhotoContext(old.cloudinaryId, oldCtx);
             } catch (e) {
               console.error('Failed to archive photo:', old.cloudinaryId, e);
             }
