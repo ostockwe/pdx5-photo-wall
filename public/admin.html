@@ -42,6 +42,44 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Lightbox for full photo view -->
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" alt="Full photo">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  </div>
+
+  <style>
+    .photo-card img { cursor: pointer; }
+    .lightbox {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .lightbox.visible { display: flex; }
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 20px; right: 20px;
+      background: rgba(255,255,255,0.2);
+      border: none; color: white;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+  </style>
+
   <script>
     // Auth check
     const loginPage = document.getElementById('loginPage');
@@ -111,9 +149,10 @@
 
       grid.innerHTML = filtered.map(photo => {
         const safeId = photo.id.replace(/'/g, "\\'");
+        const safeUrl = photo.imageUrl.replace(/'/g, "\\'");
         return `
         <div class="photo-card">
-          <img src="${photo.imageUrl}" alt="${escapeAttr(photo.caption)}" loading="lazy">
+          <img src="${photo.imageUrl}" alt="${escapeAttr(photo.caption)}" loading="lazy" onclick="openLightbox('${safeUrl}')">
           <div class="card-body">
             <h3>${escapeHtml(photo.submittedBy)}</h3>
             <p class="caption">${escapeHtml(photo.caption) || '<em>No caption</em>'}</p>
@@ -170,6 +209,19 @@
       toast.className = 'toast ' + type + ' visible';
       setTimeout(() => toast.classList.remove('visible'), 3000);
     }
+
+    function openLightbox(url) {
+      document.getElementById('lightboxImg').src = url;
+      document.getElementById('lightbox').classList.add('visible');
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('visible');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
 
     document.getElementById('adminTabs').addEventListener('click', (e) => {
       const tab = e.target.closest('.admin-tab');

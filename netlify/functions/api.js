@@ -186,6 +186,26 @@ exports.handler = async (event) => {
       ctx.status = body.status;
       await updatePhotoContext(publicId, ctx);
 
+      // If approving, check if we exceed 25 approved photos and archive the oldest
+      if (body.status === 'approved') {
+        const allPhotos = await getPhotos();
+        const approved = allPhotos
+          .filter(p => p.status === 'approved')
+          .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+
+        if (approved.length > 25) {
+          // Delete the oldest approved photos beyond 25
+          const toArchive = approved.slice(0, approved.length - 25);
+          for (const old of toArchive) {
+            try {
+              await cloudinary.uploader.destroy(old.cloudinaryId);
+            } catch (e) {
+              console.error('Failed to archive photo:', old.cloudinaryId, e);
+            }
+          }
+        }
+      }
+
       return { statusCode: 200, headers, body: JSON.stringify({ id: publicId, status: body.status }) };
     }
 
