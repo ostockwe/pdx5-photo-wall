@@ -125,31 +125,48 @@ exports.handler = async (event) => {
 
     // POST /photos - Upload
     if (path === '/photos' && method === 'POST') {
-      const parsed = parseMultipart(event);
-      if (!parsed || !parsed.fileBuffer) {
-        return { statusCode: 400, headers, body: JSON.stringify({ error: 'No file uploaded' }) };
+      let parsed;
+      try {
+        parsed = parseMultipart(event);
+      } catch (parseErr) {
+        console.error('Multipart parse error:', parseErr);
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Could not process upload. Please try a smaller photo or a different format (JPG, PNG).' }) };
       }
 
-      const caption = parsed.fields.caption || '';
-      const submittedBy = parsed.fields.submittedBy || 'Anonymous';
+      if (!parsed || !parsed.fileBuffer) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'No file detected. Please select a photo and try again.' }) };
+      }
+
+      if (parsed.fileBuffer.length > 10 * 1024 * 1024) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Photo is too large. Please use a photo under 10MB.' }) };
+      }
+
+      const caption = (parsed.fields.caption || '').replace(/[|=]/g, ' ').substring(0, 200);
+      const submittedBy = (parsed.fields.submittedBy || 'Anonymous').replace(/[|=]/g, ' ').substring(0, 50);
       const submittedAt = new Date().toISOString();
 
       // Upload to Cloudinary
-      const result = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            folder: FOLDER,
-            tags: [DATA_TAG],
-            context: `caption=${caption.replace(/[|=]/g, ' ')}|submittedBy=${submittedBy.replace(/[|=]/g, ' ')}|status=pending|submittedAt=${submittedAt}`,
-            transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
-          },
-          (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          }
-        );
-        stream.end(parsed.fileBuffer);
-      });
+      let result;
+      try {
+        result = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            {
+              folder: FOLDER,
+              tags: [DATA_TAG],
+              context: `caption=${caption}|submittedBy=${submittedBy}|status=pending|submittedAt=${submittedAt}`,
+              transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }]
+            },
+            (err, result) => {
+              if (err) reject(err);
+              else resolve(result);
+            }
+          );
+          stream.end(parsed.fileBuffer);
+        });
+      } catch (uploadErr) {
+        console.error('Cloudinary upload error:', uploadErr);
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Upload failed. Please try again with a JPG or PNG photo under 10MB.' }) };
+      }
 
       const photo = {
         id: result.public_id,
